@@ -7081,3 +7081,14 @@ iframe {
 }
 
 .skills-section .skills-slide { padding-left: 8px; padding-right: 8px; }
+
+.tuition-total-line {
+  color: #fff;
+  font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+  font-weight: 700;
+  margin: 0 0 1rem;
+  text-align: left;
+}
+.tuition-total-line strong {
+  font-weight: 800;
+}
