@@ -1,288 +1,252 @@
-    $(document).ready(function () {
+/**
+ * M.A. American Studies landing page interactions
+ * Kept minimal to avoid conflicts with NPF registration widgets.
+ * Does not bind to form inputs / validation.
+ */
+(function () {
+  'use strict';
 
-      /* ── PROGRAMME HIGHLIGHTS SLIDER ── */
-      const track = $('.slider-track');
-      const items = $('.slider-item');
-      let current = 0;
+  function initFeaturesSlider() {
+    var viewport = document.getElementById('featuresSlider');
+    var prevBtn = document.querySelector('.features-arrow.prev');
+    var nextBtn = document.querySelector('.features-arrow.next');
+    if (!viewport || !prevBtn || !nextBtn) return;
 
-      function getVisible() {
-        if (window.innerWidth < 576) return 1;
-        if (window.innerWidth < 768) return 1;
-        if (window.innerWidth < 1024) return 2;
-        return 3;
+    var currentIndex = 0;
+
+    function isMobileFeatures() {
+      return window.matchMedia('(max-width: 767px)').matches;
+    }
+
+    function getItems() {
+      if (isMobileFeatures()) {
+        return Array.prototype.slice.call(viewport.querySelectorAll('.feature-card'));
       }
+      return Array.prototype.slice.call(viewport.querySelectorAll('.features-slide'));
+    }
 
-      function updateSlider() {
-        const visibleCount = getVisible();
-        const wrapperWidth = $('.slider-wrapper').width();
-        const itemWidth = wrapperWidth / visibleCount;
-        items.css({ 'min-width': itemWidth + 'px', 'max-width': itemWidth + 'px', 'width': itemWidth + 'px' });
-        track.css('transform', 'translateX(-' + (current * itemWidth) + 'px)');
+    function updateArrows() {
+      var items = getItems();
+      prevBtn.disabled = currentIndex <= 0;
+      nextBtn.disabled = currentIndex >= items.length - 1;
+    }
+
+    function goToSlide(index) {
+      var items = getItems();
+      if (!items.length) return;
+      currentIndex = Math.max(0, Math.min(index, items.length - 1));
+      var target = items[currentIndex];
+      if (target) {
+        viewport.scrollTo({ left: target.offsetLeft, behavior: 'smooth' });
       }
+      updateArrows();
+    }
 
-      $('.right-btn').on('click', function () {
-        const visibleCount = getVisible();
-        if (current < items.length - visibleCount) { current++; updateSlider(); }
-      });
-
-      $('.left-btn').on('click', function () {
-        if (current > 0) { current--; updateSlider(); }
-      });
-
-      $(window).on('resize', function () { current = 0; updateSlider(); updateFaculty(); updateTest(); updateRecognitions(); });
-      updateSlider();
-
-      /* ── WHAT'S IN IT FOR YOU CAROUSEL ── */
-      (function () {
-        const $wTrack = $('.wiifu-track');
-        if (!$wTrack.length) return;
-        const $wItems = $wTrack.children('.wiifu-item');
-        const $wViewport = $('.wiifu-viewport');
-        const $wPrev = $('.wiifu-prev');
-        const $wNext = $('.wiifu-next');
-        const GAP = 24;
-        let wIdx = 0;
-
-        function wVisible() {
-          const w = window.innerWidth;
-          if (w < 576) return 1;
-          if (w < 992) return 2;
-          return 3;
-        }
-
-        function wLayout() {
-          const vis = wVisible();
-          const vw = $wViewport.width();
-          const itemW = (vw - GAP * (vis - 1)) / vis;
-          $wItems.css('width', itemW + 'px');
-          const maxIdx = Math.max(0, $wItems.length - vis);
-          if (wIdx > maxIdx) wIdx = maxIdx;
-          $wTrack.css('transform', 'translateX(-' + (wIdx * (itemW + GAP)) + 'px)');
-          $wPrev.prop('disabled', wIdx === 0);
-          $wNext.prop('disabled', wIdx >= maxIdx);
-        }
-
-        $wNext.on('click', function () {
-          const maxIdx = Math.max(0, $wItems.length - wVisible());
-          if (wIdx < maxIdx) { wIdx++; wLayout(); }
-        });
-        $wPrev.on('click', function () {
-          if (wIdx > 0) { wIdx--; wLayout(); }
-        });
-        $(window).on('resize', wLayout);
-        wLayout();
-      })();
-
-      /* ── RECOGNITIONS CAROUSEL FOR MOBILE ── */
-      const $reconBadge = $('.recognitions-badges');
-      function updateRecognitions() {
-        if (window.innerWidth <= 768) {
-          if (!$reconBadge.hasClass('owl-carousel')) {
-            $reconBadge.addClass('owl-carousel owl-theme').owlCarousel({
-              items: 1,
-              margin: 20,
-              loop: true,
-              nav: false,
-              dots: true,
-              autoplay: true,
-              autoplayTimeout: 3500
-            });
-          }
-        } else {
-          if ($reconBadge.hasClass('owl-carousel')) {
-            $reconBadge.trigger('destroy.owl.carousel').removeClass('owl-carousel owl-theme');
-          }
-        }
-      }
-      updateRecognitions();
-
-      /* ── FACULTY CAROUSEL ── */
-      const facultyGrid = document.querySelector('.faculty-grid');
-      const facultyCards = document.querySelectorAll('.faculty-card');
-      const prevBtn = document.querySelector('.faculty-prev-btn');
-      const nextBtn = document.querySelector('.faculty-next-btn');
-      let fIdx = 0;
-
-      function updateFaculty() {
-        if (!facultyGrid || !facultyCards.length) return;
-        const gap = parseFloat(window.getComputedStyle(facultyGrid).gap) || 0;
-        const w = facultyCards[0].offsetWidth + gap;
-        facultyGrid.style.transform = 'translateX(-' + (fIdx * w) + 'px)';
-      }
-
-      if (prevBtn) {
-        prevBtn.addEventListener('click', () => { if (fIdx > 0) { fIdx--; updateFaculty(); } });
-      }
-      if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-          if (!facultyGrid) return;
-          const gap = parseFloat(window.getComputedStyle(facultyGrid).gap) || 0;
-          const w = facultyCards[0].offsetWidth + gap;
-          const visible = Math.floor(facultyGrid.parentElement.offsetWidth / w) || 1;
-          const maxIdx = Math.max(0, facultyCards.length - visible);
-          if (fIdx < maxIdx) { fIdx++; updateFaculty(); }
-        });
-      }
-      updateFaculty();
-
-      /* ── TESTIMONIALS SLIDER ── */
-      const testGrid = document.querySelector('.test-grid');
-      const testCards = document.querySelectorAll('.test-card');
-      let tIdx = 0;
-
-      function updateTest() {
-        if (!testGrid || !testCards.length) return;
-        const gap = parseFloat(window.getComputedStyle(testGrid).gap) || 0;
-        const w = testCards[0].offsetWidth + gap;
-        testGrid.style.transform = 'translateX(-' + (tIdx * w) + 'px)';
-      }
-
-      document.getElementById('testPrev')?.addEventListener('click', () => {
-        if (tIdx > 0) { tIdx--; updateTest(); }
-      });
-
-      document.getElementById('testNext')?.addEventListener('click', () => {
-        if (!testGrid) return;
-        const gap = parseFloat(window.getComputedStyle(testGrid).gap) || 0;
-        const w = testCards[0].offsetWidth + gap;
-        const sliderWrap = document.querySelector('.sc-slider-wrap');
-        const visible = Math.floor((sliderWrap ? sliderWrap.offsetWidth : testGrid.parentElement.offsetWidth) / w) || 1;
-        const maxIdx = Math.max(0, testCards.length - visible);
-        if (tIdx < maxIdx) { tIdx++; updateTest(); }
-      });
-
-      updateTest();
-
-      /* ── VIDEO BOX ── */
-      const videoBox = document.querySelector('.video-box[data-youtube]');
-      if (videoBox) {
-        videoBox.addEventListener('click', function () {
-          const url = this.getAttribute('data-youtube');
-          if (url && url.indexOf('REPLACE_VIDEO_ID') === -1) {
-            window.open(url, '_blank');
-          }
-        });
-      }
-
-      /* ── DYNAMIC BACKGROUND SWAP FOR ELIGIBILITY SECTION ── */
-      $('#eligTabs button').on('shown.bs.tab', function (e) {
-        const targetId = $(e.target).attr('data-bs-target');
-        const $sec = $('.eligibility-section');
-        $sec.removeClass('bg-eligibility bg-fees bg-payment');
-        if (targetId === '#tab-elig') {
-          $sec.addClass('bg-eligibility');
-        } else if (targetId === '#tab-fees') {
-          $sec.addClass('bg-fees');
-        } else if (targetId === '#tab-payment') {
-          $sec.addClass('bg-payment');
+    function syncIndexFromScroll() {
+      var items = getItems();
+      if (!items.length) return;
+      var scrollLeft = viewport.scrollLeft;
+      var closestIndex = 0;
+      var smallestDiff = Infinity;
+      items.forEach(function (item, index) {
+        var diff = Math.abs(item.offsetLeft - scrollLeft);
+        if (diff < smallestDiff) {
+          smallestDiff = diff;
+          closestIndex = index;
         }
       });
+      currentIndex = closestIndex;
+      updateArrows();
+    }
 
-/* ── WHO IS THIS PROGRAMME FOR — drag-to-scroll carousel ── */
-      (function () {
-        const slider = document.querySelector('.who-cards');
-        if (!slider) return;
-        let isDown = false, startX = 0, startScroll = 0, moved = false;
-
-        slider.addEventListener('mousedown', function (e) {
-          isDown = true; moved = false;
-          slider.classList.add('dragging');
-          startX = e.pageX;
-          startScroll = slider.scrollLeft;
-        });
-        window.addEventListener('mouseup', function () {
-          isDown = false;
-          slider.classList.remove('dragging');
-        });
-        slider.addEventListener('mousemove', function (e) {
-          if (!isDown) return;
-          e.preventDefault();
-          const walk = e.pageX - startX;
-          if (Math.abs(walk) > 4) moved = true;
-          slider.scrollLeft = startScroll - walk;
-        });
-        /* Prevent the card link/hover from firing after a drag */
-        slider.addEventListener('click', function (e) {
-          if (moved) { e.preventDefault(); e.stopPropagation(); }
-        }, true);
-
-        /* Prev/Next nav buttons */
-        const prevBtn = document.querySelector('.who-prev');
-        const nextBtn = document.querySelector('.who-next');
-        function getStep() {
-          const card = slider.querySelector('.who-card2');
-          if (!card) return 260;
-          const gap = parseFloat(window.getComputedStyle(slider).gap) || 0;
-          return card.offsetWidth + gap;
-        }
-        function updateWhoNavs() {
-          if (!prevBtn || !nextBtn) return;
-          const overflow = slider.scrollWidth > slider.clientWidth + 2;
-          prevBtn.style.display = overflow ? '' : 'none';
-          nextBtn.style.display = overflow ? '' : 'none';
-          prevBtn.disabled = slider.scrollLeft <= 2;
-          nextBtn.disabled = slider.scrollLeft >= (slider.scrollWidth - slider.clientWidth - 2);
-        }
-        if (prevBtn) prevBtn.addEventListener('click', function () {
-          slider.scrollBy({ left: -getStep(), behavior: 'smooth' });
-        });
-        if (nextBtn) nextBtn.addEventListener('click', function () {
-          slider.scrollBy({ left: getStep(), behavior: 'smooth' });
-        });
-        slider.addEventListener('scroll', updateWhoNavs);
-        window.addEventListener('resize', updateWhoNavs);
-        updateWhoNavs();
-      })();
-
-      /* ── FACULTY — drag-to-scroll carousel ── */
-      (function () {
-        const slider = document.querySelector('.faculty-row');
-        if (!slider) return;
-        let isDown = false, startX = 0, startScroll = 0, moved = false;
-
-        slider.addEventListener('mousedown', function (e) {
-          isDown = true; moved = false;
-          slider.classList.add('dragging');
-          startX = e.pageX;
-          startScroll = slider.scrollLeft;
-        });
-        window.addEventListener('mouseup', function () {
-          isDown = false;
-          slider.classList.remove('dragging');
-        });
-        slider.addEventListener('mousemove', function (e) {
-          if (!isDown) return;
-          e.preventDefault();
-          const walk = e.pageX - startX;
-          if (Math.abs(walk) > 4) moved = true;
-          slider.scrollLeft = startScroll - walk;
-        });
-        slider.addEventListener('click', function (e) {
-          if (moved) { e.preventDefault(); e.stopPropagation(); }
-        }, true);
-
-        const prevBtn = document.querySelector('.faculty-prev');
-        const nextBtn = document.querySelector('.faculty-next');
-        function getStep() {
-          const card = slider.querySelector('.faculty-card');
-          if (!card) return 260;
-          const gap = parseFloat(window.getComputedStyle(slider).gap) || 0;
-          return card.offsetWidth + gap;
-        }
-        function updateFacultyNavs() {
-          if (!prevBtn || !nextBtn) return;
-          prevBtn.disabled = slider.scrollLeft <= 2;
-          nextBtn.disabled = slider.scrollLeft >= (slider.scrollWidth - slider.clientWidth - 2);
-        }
-        if (prevBtn) prevBtn.addEventListener('click', function () {
-          slider.scrollBy({ left: -getStep(), behavior: 'smooth' });
-        });
-        if (nextBtn) nextBtn.addEventListener('click', function () {
-          slider.scrollBy({ left: getStep(), behavior: 'smooth' });
-        });
-        slider.addEventListener('scroll', updateFacultyNavs);
-        window.addEventListener('resize', updateFacultyNavs);
-        updateFacultyNavs();
-      })();
-
+    prevBtn.addEventListener('click', function () { goToSlide(currentIndex - 1); });
+    nextBtn.addEventListener('click', function () { goToSlide(currentIndex + 1); });
+    viewport.addEventListener('scroll', syncIndexFromScroll, { passive: true });
+    window.addEventListener('resize', function () {
+      currentIndex = 0;
+      goToSlide(0);
     });
+    goToSlide(0);
+  }
+
+  function initFacultySlider() {
+    var track = document.getElementById('facultyTrack');
+    var prevBtn = document.querySelector('.faculty-arrow.prev');
+    var nextBtn = document.querySelector('.faculty-arrow.next');
+    if (!track || !prevBtn || !nextBtn) return;
+
+    function getScrollAmount() {
+      var member = track.querySelector('.faculty-member');
+      if (!member) return 256;
+      var styles = window.getComputedStyle(track);
+      var gap = parseFloat(styles.columnGap || styles.gap) || 0;
+      return member.offsetWidth + gap;
+    }
+
+    function updateArrows() {
+      var maxScroll = track.scrollWidth - track.clientWidth;
+      prevBtn.disabled = track.scrollLeft <= 4;
+      nextBtn.disabled = track.scrollLeft >= maxScroll - 4 || maxScroll <= 0;
+    }
+
+    function scrollFaculty(direction) {
+      var amount = getScrollAmount();
+      var nextLeft = Math.round(track.scrollLeft / amount) * amount + direction * amount;
+      track.scrollTo({ left: Math.max(0, nextLeft), behavior: 'smooth' });
+    }
+
+    prevBtn.addEventListener('click', function () { scrollFaculty(-1); });
+    nextBtn.addEventListener('click', function () { scrollFaculty(1); });
+    track.addEventListener('scroll', updateArrows, { passive: true });
+    window.addEventListener('resize', updateArrows);
+    updateArrows();
+  }
+
+  function initSkillsDots() {
+    var viewport = document.querySelector('.skills-carousel-viewport');
+    var track = document.getElementById('skillsCarouselTrack');
+    var dotsContainer = document.getElementById('skillsDots');
+    if (!viewport || !track || !dotsContainer) return;
+
+    var slides = Array.prototype.slice.call(track.querySelectorAll('.skills-slide'));
+    var dots = dotsContainer.querySelectorAll('.skills-dot');
+    var currentIndex = 0;
+
+    function getSlideWidth() {
+      return slides[0] ? slides[0].getBoundingClientRect().width : viewport.clientWidth;
+    }
+
+    function goToSlide(index) {
+      currentIndex = Math.max(0, Math.min(index, slides.length - 1));
+      track.style.transform = 'translate3d(-' + (currentIndex * getSlideWidth()) + 'px, 0, 0)';
+      Array.prototype.forEach.call(dots, function (dot, i) {
+        var active = i === currentIndex;
+        dot.classList.toggle('active', active);
+        dot.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+    }
+
+    Array.prototype.forEach.call(dots, function (dot) {
+      dot.addEventListener('click', function () {
+        goToSlide(parseInt(dot.getAttribute('data-index'), 10));
+      });
+    });
+
+    window.addEventListener('resize', function () { goToSlide(currentIndex); });
+    goToSlide(0);
+  }
+
+  function initRecognitionDots() {
+    var grid = document.getElementById('recognitionGrid');
+    var dotsContainer = document.getElementById('recognitionDots');
+    if (!grid || !dotsContainer) return;
+
+    var cards = Array.prototype.slice.call(grid.querySelectorAll('.rec-card'));
+    var scrollTimer = null;
+
+    function updateDots(index) {
+      var dots = dotsContainer.querySelectorAll('.recognition-dot');
+      Array.prototype.forEach.call(dots, function (dot, i) {
+        var active = i === index;
+        dot.classList.toggle('active', active);
+        dot.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+    }
+
+    function scrollToCard(index) {
+      var card = cards[index];
+      if (!card) return;
+      grid.scrollTo({ left: card.offsetLeft, behavior: 'smooth' });
+      updateDots(index);
+    }
+
+    function getNearestIndex() {
+      var left = grid.scrollLeft;
+      var nearest = 0;
+      var minDist = Infinity;
+      cards.forEach(function (card, i) {
+        var dist = Math.abs(card.offsetLeft - left);
+        if (dist < minDist) {
+          minDist = dist;
+          nearest = i;
+        }
+      });
+      return nearest;
+    }
+
+    dotsContainer.innerHTML = '';
+    cards.forEach(function (_, i) {
+      var dot = document.createElement('button');
+      dot.type = 'button';
+      dot.className = 'recognition-dot' + (i === 0 ? ' active' : '');
+      dot.setAttribute('aria-label', 'Go to recognition ' + (i + 1));
+      dot.addEventListener('click', function () { scrollToCard(i); });
+      dotsContainer.appendChild(dot);
+    });
+
+    grid.addEventListener('scroll', function () {
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function () { updateDots(getNearestIndex()); }, 60);
+    }, { passive: true });
+  }
+
+  function initTuitionTabs() {
+    var panel = document.getElementById('tuitionPanel');
+    var panelBg = document.getElementById('tuitionPanelBg');
+    var tabButtons = document.querySelectorAll('.tuition-tab');
+    var tabPanels = document.querySelectorAll('.tuition-tab-panel');
+    if (!tabButtons.length || !tabPanels.length) return;
+
+    function switchTuitionTab(tabName) {
+      var isFees = tabName === 'fees';
+      if (panel) {
+        panel.classList.toggle('tuition-panel--fees', isFees);
+        panel.classList.toggle('tuition-panel--eligibility', !isFees);
+      }
+      if (panelBg) {
+        panelBg.src = isFees ? './Assets/Fee structure/bg picture (38).png' : './Assets/Eligibility/bg picture (39).png';
+      }
+      Array.prototype.forEach.call(tabButtons, function (button) {
+        var active = button.getAttribute('data-tab') === tabName;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      Array.prototype.forEach.call(tabPanels, function (tabPanel) {
+        var active = tabPanel.id === (isFees ? 'tuitionTabFees' : 'tuitionTabEligibility');
+        tabPanel.classList.toggle('active', active);
+        tabPanel.hidden = !active;
+      });
+    }
+
+    Array.prototype.forEach.call(tabButtons, function (button) {
+      button.addEventListener('click', function () {
+        switchTuitionTab(button.getAttribute('data-tab'));
+      });
+    });
+    switchTuitionTab('fees');
+  }
+
+  function initHeroApply() {
+    var applyBtn = document.getElementById('heroApplyNowBtn');
+    var npfTrigger = document.querySelector('.hero-npf-trigger.npfWidget-2269310620e1020933ae2a2b9b81fa3a');
+    if (!applyBtn) return;
+    applyBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (npfTrigger) {
+        npfTrigger.click();
+        return;
+      }
+      var fallback = document.querySelector('.npfWidgetButton.npfWidget-2269310620e1020933ae2a2b9b81fa3a');
+      if (fallback) fallback.click();
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    initFeaturesSlider();
+    initFacultySlider();
+    initSkillsDots();
+    initRecognitionDots();
+    initTuitionTabs();
+    initHeroApply();
+  });
+})();
